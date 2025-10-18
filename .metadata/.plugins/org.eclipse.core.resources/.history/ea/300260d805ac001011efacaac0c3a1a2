@@ -1,0 +1,71 @@
+package com.example.githubactivity.service;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import com.example.githubactivity.dto.ActivityResponse;
+import com.example.githubactivity.model.Event;
+
+@Service
+public class GithubService {
+	
+	private final RestTemplate restTemplate = new RestTemplate();
+	
+	@Cacheable("githubActivity") // Cache results by userName
+	public List<Event> getRawActivity(String userName) {
+		System.out.println("Fetching from GitHub API...");
+		String url = "https://api.github.com/users/" + userName + "/events";
+		
+		try {
+			ResponseEntity<Event[]> response = restTemplate.getForEntity(url, Event[].class);
+			Event[] events = response.getBody();
+			return Arrays.asList(events);
+		} catch (Exception e) {
+			System.out.println("Error fetching Github activity: " + e.getMessage());
+			return Collections.emptyList();
+		}
+	}
+	
+	public List<ActivityResponse> fetchUserActivity(String userName, String type) {
+		List<Event> events = getRawActivity(userName);
+		
+		// Optional filtering by event type
+		if (type != null && !type.isEmpty()) {
+			events = events.stream()
+					.filter(e -> e.getType() != null && e.getType().equalsIgnoreCase(type))
+					.collect(Collectors.toList());
+		}
+		
+		// Convert to structured, readable format
+		return events.stream()
+				.map(this::mapToActivityResponse)
+				.collect(Collectors.toList());
+	}
+	
+	private ActivityResponse mapToActivityResponse(Event event) {
+		String eventType = event.getType();
+		String repoName = event.getRepo() != null ? event.getRepo().getName() : "Unknown Repo";
+		String createdAt = event.getCreated_at();
+		
+		String description = generateDescription(eventType, repoName);
+		return new ActivityResponse(description, repoName, eventType, createdAt);
+	}
+	
+	private String generateDescription(String eventType, String repoName) {
+		return switch (eventType) {
+		case "PushEvent" -> "Pushed new commits to " + repoName;
+		case "CreateEvent" -> "Created repository or branch in " + repoName;
+		case "WatchEvent" -> "Starred " + repoName;
+		case "IssuesEvent" -> "Interacted with issues in " + repoName;
+		case "ForkEvent" -> "Forked " + repoName;
+		default -> "Performed " + eventType + "in " + repoName;
+		};
+	}
+}

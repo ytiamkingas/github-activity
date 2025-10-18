@@ -1,0 +1,5 @@
+package com.example.githubactivity.exception;
+
+public class GlobalExceptionHandler {
+
+}

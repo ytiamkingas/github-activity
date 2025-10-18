@@ -1,0 +1,58 @@
+package com.example.githubactivity.cli;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
+
+import com.example.githubactivity.dto.ActivityResponse;
+import com.example.githubactivity.service.GithubService;
+
+@Component
+public class GithubCliRunner implements CommandLineRunner{
+	@Autowired
+	private GithubService githubService;
+	
+	@Override
+	public void run(String... args) {
+		if (args.length == 0) {
+			System.out.println("Usage: java -jar github-activity.jar <username> [--type=EventType]");
+			return;
+		}
+		
+		String username = args[0];
+		String type = null;
+		
+		// Optional type flag (e.g., --type=PushEvent)
+		for (String arg : args) {
+			if (arg.startsWith("--type=")) {
+				type = arg.substring("--type=".length());
+			}
+		}
+		
+		System.out.println("\nFetching activity for user: " + username);
+		if (type != null) {
+			System.out.println("Filtering by type: " + type);
+		}
+		
+		try {
+			List<ActivityResponse> activities = githubService.fetchUserActivity(username, type, 1, 10);
+		
+			if (activities.isEmpty()) {
+				System.out.println("No recent activity found.");
+				return;
+			}
+			
+			for (ActivityResponse activity : activities) {
+				System.out.printf("📦 %-25s | %-20s | %s%n",
+						activity.getEventType(),
+						activity.getRepoName(),
+						activity.getCreatedAt());
+				System.out.println("   → " + activity.getDescription());
+			}
+		} catch (RuntimeException e) {
+			System.err.println("❌ Error: " + e.getMessage());
+		}
+	}
+}

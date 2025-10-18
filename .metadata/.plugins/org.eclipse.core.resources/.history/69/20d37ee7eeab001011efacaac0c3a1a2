@@ -1,0 +1,23 @@
+package com.example.githubactivity.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.githubactivity.service.GithubService;
+
+@RestController
+@RequestMapping("/activity")
+public class GithubController {
+//	@GetMapping("/test")
+//	public String test() {
+//		return "Okay!";
+//	}
+	
+	@Autowired
+	private final GithubService githubService;
+	
+	@GetMapping("/{userName}")
+	public ResponseEntity
+}

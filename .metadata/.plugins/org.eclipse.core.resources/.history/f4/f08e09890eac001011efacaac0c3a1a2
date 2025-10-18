@@ -1,0 +1,4 @@
+spring.application.name=github-activity
+
+spring.cache.type=simple
+# cache lives in-memory by default; no extra setup needed
